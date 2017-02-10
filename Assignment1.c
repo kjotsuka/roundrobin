@@ -28,6 +28,10 @@ void runSJF(node* head);
 int findShortestBurst(int* burstArr, int length, int* arrivalArr, int* shortest, int time);
 int decrementBurstArr(int* burstArr, int index);
 
+//functions for Roundrobin
+void runRr(node *head);
+
+
 //int i=0;
 
 int main(int argc,char* argv[]){
@@ -88,8 +92,8 @@ int main(int argc,char* argv[]){
 
 
     //int i=0;
-/*
-    while(head->next!=NULL){
+
+/*    while(head->next!=NULL){
         printf("%s\n",head->word);
         head=head->next;
     }
@@ -98,7 +102,7 @@ int main(int argc,char* argv[]){
 
 	//used for testing runSJF in development
     //runSJF(head);
-
+	//runRr(head);
     return 0;
 
 }
@@ -259,6 +263,160 @@ int decrementBurstArr(int* burstArr, int index)
 		return 1;
 	}
 	return 0;
+}
+
+void runRr(node* head)
+{
+    //get process count
+	head = head->next;
+	int pCount = atoi(head->word);
+	printf("pCount: %d\n",pCount);	
+
+	//get runfor
+	head = head->next->next;
+	int runFor = atoi(head->word);
+	printf("runFor: %d\n",runFor);	
+
+	//skip "use rr"
+	head = head->next->next;
+
+	//get quantum
+	head = head->next->next;
+	int quantum = atoi(head->word);
+	printf("quantum: %d\n",quantum);
+
+	//declare array for names, arrival time, burst time
+	//	arrival time, and finish time(used for calculating turnaround
+	char nameArr[pCount][30];
+	int arrivalArr[pCount];
+	int burstArr[pCount];
+	int *waitArr = calloc(pCount, sizeof(int));
+	int finArr[pCount];
+	int *readyArr = calloc(pCount, sizeof(int));
+
+	//get process names, arrival, burst times
+	int i;
+	for(i=0;i<pCount;i++)
+	{
+		//get process name
+		head = head->next->next->next;
+		strcpy(nameArr[i], head->word);
+		printf("processname: %s\n",nameArr[i]);		
+
+		//get arrival time
+		head = head->next->next;
+		arrivalArr[i] = atoi(head->word);
+		printf("arrival time: %d\n",arrivalArr[i]);
+
+		//get burst time
+		head = head->next->next;
+		burstArr[i] = atoi(head->word);
+		printf("burst time: %d\n",burstArr[i]);
+	}
+
+	//print first 3 lines
+	printf("%d processes\n",pCount);
+	printf("Using Round-Robin\n");
+	printf("Quantum %d\n\n", quantum);
+
+	int time = 0;
+	int readyCount = 0;
+	int qCount = 1;
+	int selected;
+	int selectedIndex = 0;
+	int finished;
+
+	while(time<=runFor)
+	{
+		qCount--;
+
+		//reset finished checker
+		finished = 0;
+		
+		//check for arrivals
+		for(i=0;i<pCount;i++)
+		{
+			if(arrivalArr[i] == time)
+			{
+				printf("Time %d: %s arrived\n", time, nameArr[i]);
+			}
+			
+			//add the arrived process into the readyarray
+			readyArr[readyCount++] = i;
+		}
+		
+		//if ran for quantum time, pick new one
+		if(qCount == 0)
+		{
+			selected = -1;
+			//select if burst time not 0 (start from next available process)
+			if(selectedIndex+1 >= pCount)
+			{
+				selectedIndex = 0;
+			}
+			else
+			{
+				selectedIndex++;
+			}
+			for(i=selectedIndex;i<readyCount;i++)
+			{
+				if(burstArr[readyArr[i]]>0 && arrivalArr[readyArr[i]] <= time)
+				{
+					selected = readyArr[i];
+					selectedIndex = i;
+					printf("Time %d: %s selected (burst %d)\n", time, nameArr[selected], burstArr[selected]);
+					qCount = quantum;
+					break;
+				}
+			}
+			//if none selected previously, start from beginning of list
+			if(selected == -1)
+			{
+				for(i=0;i<readyCount;i++)
+				{
+					if(burstArr[readyArr[i]]>0 && arrivalArr[readyArr[i]] <= time)
+					{
+						selected = readyArr[i];
+						selectedIndex = i;
+						printf("Time %d: %s selected (burst %d)\n", time, nameArr[selected], burstArr[selected]);
+						qCount = quantum;
+						break;
+					}
+				}
+			}
+			
+			//if still not selected, show idle
+			if(selected == -1)
+			{
+				printf("Time %d: IDLE\n",time);
+			}
+		}
+		//decrement burst array for selected process
+		if(selected != -1)
+		{
+			finished = decrementBurstArr(burstArr, selected);
+			if(finished == 1)
+			{
+				printf("Time %d: %s finished\n", time+1, nameArr[selected]);
+				qCount = 1;
+				finArr[selected] = time+1;
+			}
+			for(i=0;i<pCount;i++)
+			{
+				if(i != selected && burstArr[i] != 0 && arrivalArr[i] <= time)
+				{
+					waitArr[i]++;
+				}
+			}
+		}
+		time++;
+	}
+		
+	for(i=0;i<pCount;i++)
+	{
+		printf("%s wait %d turnaround %d\n",nameArr[i],waitArr[i],(finArr[i]-arrivalArr[i]));
+	}
+
 }
 
 
