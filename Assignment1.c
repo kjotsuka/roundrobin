@@ -524,7 +524,7 @@ void fcfs(node* head,process process_list[],int processCount,int runTime,int qua
 
             //prints any idle time
             if(time<process_list[running].arrivalTime){
-                   printf("Time %d: idle\n",time);
+                   printf("Time %d: IDLE\n",time);
                     time++;
                     continue;
             }
