@@ -101,7 +101,7 @@ int main(int argc,char* argv[]){
 	node* tempHead = head;
 	char tempName[50];
 	int foundA = 0;
-	int count = 0;	
+	int count = 0;
 	while(foundA == 0)
 	{
 		strcpy(tempName,tempHead->word);
@@ -126,7 +126,7 @@ int main(int argc,char* argv[]){
      		//make process list
     		process process_list[processCount];
 		    fcfs(head, process_list,processCount,runTime,quantum);
-			foundA = 1;		
+			foundA = 1;
 		}
 		else if(strcmp(tempName,"rr") == 0)
 		{
@@ -137,7 +137,7 @@ int main(int argc,char* argv[]){
 		{
 			runSJF(head);
 			foundA = 1;
-		} 
+		}
 		tempHead = tempHead->next;
 	}
     fclose(inputFile);
@@ -150,12 +150,12 @@ void runSJF(node* head)
 {
     //get process count
 	head = head->next;
-	int pCount = atoi(head->word);	
+	int pCount = atoi(head->word);
 
 	//get runfor
 	head = head->next->next;
 	int runFor = atoi(head->word);
-	
+
 	//skip "use sjf"
 	head = head->next->next;
 
@@ -166,7 +166,7 @@ void runSJF(node* head)
 	int burstArr[pCount];
 	int *waitArr = calloc(pCount, sizeof(int));
 	int finArr[pCount];
-		
+
 
 	//get process names, arrival, burst times
 	int i;
@@ -175,7 +175,7 @@ void runSJF(node* head)
 		//get process name
 		head = head->next->next->next;
 		strcpy(nameArr[i], head->word);
-		
+
 		//get arrival time
 		head = head->next->next;
 		arrivalArr[i] = atoi(head->word);
@@ -196,7 +196,7 @@ void runSJF(node* head)
 	while(time <= runFor)
 	{
 		//reset finished checker
-		finished = 0;		
+		finished = 0;
 
 		//check for arrivals
 		for(i=0;i<pCount;i++)
@@ -211,7 +211,7 @@ void runSJF(node* head)
 		int prevShortest = shortest;
 		int found = findShortestBurst(burstArr, pCount, arrivalArr, &shortest, time);
 		//printf("Shortest is: %d \n",shortest);
-		
+
 		//if no process to run is found print idle
 		if(found == -1 && time < runFor)
 		{
@@ -309,12 +309,10 @@ void runRr(node* head)
     //get process count
 	head = head->next;
 	int pCount = atoi(head->word);
-	printf("pCount: %d\n",pCount);	
 
 	//get runfor
 	head = head->next->next;
 	int runFor = atoi(head->word);
-	printf("runFor: %d\n",runFor);	
 
 	//skip "use rr"
 	head = head->next->next;
@@ -322,7 +320,6 @@ void runRr(node* head)
 	//get quantum
 	head = head->next->next;
 	int quantum = atoi(head->word);
-	printf("quantum: %d\n",quantum);
 
 	//declare array for names, arrival time, burst time
 	//	arrival time, and finish time(used for calculating turnaround
@@ -340,17 +337,14 @@ void runRr(node* head)
 		//get process name
 		head = head->next->next->next;
 		strcpy(nameArr[i], head->word);
-		printf("processname: %s\n",nameArr[i]);		
 
 		//get arrival time
 		head = head->next->next;
 		arrivalArr[i] = atoi(head->word);
-		printf("arrival time: %d\n",arrivalArr[i]);
 
 		//get burst time
 		head = head->next->next;
 		burstArr[i] = atoi(head->word);
-		printf("burst time: %d\n",burstArr[i]);
 	}
 
 	//print first 3 lines
@@ -371,7 +365,7 @@ void runRr(node* head)
 
 		//reset finished checker
 		finished = 0;
-		
+
 		//check for arrivals
 		for(i=0;i<pCount;i++)
 		{
@@ -379,11 +373,11 @@ void runRr(node* head)
 			{
 				printf("Time %d: %s arrived\n", time, nameArr[i]);
 			}
-			
+
 			//add the arrived process into the readyarray
 			readyArr[readyCount++] = i;
 		}
-		
+
 		//if ran for quantum time, pick new one
 		if(qCount == 0)
 		{
@@ -423,12 +417,9 @@ void runRr(node* head)
 					}
 				}
 			}
-			
+
 			//if still not selected, show idle
-			if(selected == -1)
-			{
-				printf("Time %d: IDLE\n",time);
-			}
+
 		}
 		//decrement burst array for selected process
 		if(selected != -1)
@@ -448,10 +439,16 @@ void runRr(node* head)
 				}
 			}
 		}
+		//if still not selected, show idle
+		if(selected == -1 && time!=runFor)
+		{
+			printf("Time %d: IDLE\n",time);
+		}
+
 		time++;
 	}
 	printf("Finished at time %d\n\n",runFor);
-		
+
 	for(i=0;i<pCount;i++)
 	{
 		printf("%s wait %d turnaround %d\n",nameArr[i],waitArr[i],(finArr[i]-arrivalArr[i]));
@@ -511,36 +508,59 @@ void fcfs(node* head,process process_list[],int processCount,int runTime,int qua
     printf("Using First Come First Serve\n\n");
 
 
+
     while(time!=runTime)
     {
+
         //prints arrival statements
         if(time==process_list[count].arrivalTime)
         {
             printf("Time %d: %s arrived\n", time, process_list[count].processName);
-
-            //if the first process then also immediately select it
-            if(count==0)
-            {
-                printf("Time %d: %s selected (burst %d)\n", time, process_list[count].processName,process_list[count].maxBurst);
-            }
             count++;
         }
 
-        //Decrements remaining burst time
-        process_list[running].burstTime--;
-        if(process_list[running].burstTime<=0)
-        {
-            //prints finish statement and selects the next process
-            if(running!=0)
-            {
-                printf("Time %d: %s selected (burst %d)\n", process_list[running-1].timeFinished, process_list[running].processName,process_list[running].maxBurst);
+        //while going through process, decrement burst per time unit
+        if(process_list[running].burstTime>=0){
+
+            //prints any idle time
+            if(time<process_list[running].arrivalTime){
+                   printf("Time %d: idle\n",time);
+                    time++;
+                    continue;
             }
-            process_list[running].timeFinished=time+1;
-            printf("Time %d: %s finished\n", time+1, process_list[running].processName);
-            running++;
+
+            //prints only first select
+            if(process_list[running].burstTime==process_list[running].maxBurst)
+                printf("Time %d: %s selected (burst %d)\n", time, process_list[running].processName,process_list[running].burstTime);
+
+            //prints time finished
+            if(process_list[running].burstTime==1){
+                process_list[running].timeFinished=time+1;
+                printf("Time %d: %s finished\n", time+1, process_list[running].processName);
+                if(process_list[processCount-1].burstTime==1){
+                    time++;
+                    break;
+                }
+            }
+
+            process_list[running].burstTime--;
+
+            //once process finished go to next process to start decrementing that one
+            if(process_list[running].burstTime==0 && running<processCount-1){
+                running++;
+
+            }
         }
+        //increment time
         time++;
     }
+
+    ///add this while loop to your version
+    while(time<runTime){
+        printf("Time %d:  IDLE\n",time);
+        time++;
+    }
+
 
     printf("Finished at time %d\n\n",time);
 
