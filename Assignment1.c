@@ -5,12 +5,24 @@
 
 #define MAX_WORD_LEN 50
 #define MAX_CANIDATE_TABLE_SIZE 100
+#define NUMBER_OF_STRINGS 50
+#define MAX_PROCESS_TABLE_SIZE 50
+#define STRING_LENGTH 100
 
 typedef struct node{
     char* word;
     struct node* next;
     struct node* prev;
 }node;
+
+//for fcfs
+typedef struct process{
+    char processName[STRING_LENGTH];
+    int arrivalTime;
+    int burstTime;
+    int maxBurst;
+    int timeFinished;
+}process;
 
 /*
     burst is how long the process is
@@ -23,6 +35,7 @@ typedef struct node{
 
 void insertNode(node** head, node** tail);
 node* startsWithLetter(FILE* input, char firstLetter, node** tail);
+
 //3 functions for Shortest Job First Algorithm
 void runSJF(node* head);
 int findShortestBurst(int* burstArr, int length, int* arrivalArr, int* shortest, int time);
@@ -31,19 +44,14 @@ int decrementBurstArr(int* burstArr, int index);
 //functions for Roundrobin
 void runRr(node *head);
 
+//for fcfs
+void fcfs(node* head,process process_list[],int processCount,int runTime, int quantum);
+char stringList[NUMBER_OF_STRINGS][STRING_LENGTH];
 
-//int i=0;
 
 int main(int argc,char* argv[]){
 
     FILE *inputFile = fopen(argv[1], "r");
-
-
-  /*char fileInput[5000];
-    while(fgets(fileInput,5000, inputFile))
-        printf("%s",fileInput);
-    printf("\n");
-    */
 
     //initialize nodes
     node* tail=NULL;
@@ -89,20 +97,51 @@ int main(int argc,char* argv[]){
         }
     }
 
+	//check which alg. to use
+	node* tempHead = head;
+	char tempName[50];
+	int foundA = 0;
+	int count = 0;	
+	while(foundA == 0)
+	{
+		strcpy(tempName,tempHead->word);
+		if(strcmp(tempName,"fcfs") == 0)
+		{
+			//for running first come first served
+    		//words in linked list passed to array of strings
+    		int i=0;
+   			while(head->next!=NULL){
+       			strcpy(stringList[i],head->word);
+      			// printf("%s\n",stringList[i]);
+        		head=head->next;
+       			i++;
+   			}
 
+    		//store process count, runtime, and quantum using the exact input format for round robin
+    		int processCount, runTime, quantum;
+  			processCount=atoi(stringList[1]);
+  			runTime=atoi(stringList[3]);
+  			quantum=atoi(stringList[7]);
 
-    //int i=0;
-
-/*    while(head->next!=NULL){
-        printf("%s\n",head->word);
-        head=head->next;
-    }
-*/
+     		//make process list
+    		process process_list[processCount];
+		    fcfs(head, process_list,processCount,runTime,quantum);
+			foundA = 1;		
+		}
+		else if(strcmp(tempName,"rr") == 0)
+		{
+			runRr(head);
+			foundA = 1;
+		}
+		else if(strcmp(tempName,"sjf") == 0)
+		{
+			runSJF(head);
+			foundA = 1;
+		} 
+		tempHead = tempHead->next;
+	}
     fclose(inputFile);
 
-	//used for testing runSJF in development
-    //runSJF(head);
-	//runRr(head);
     return 0;
 
 }
@@ -411,14 +450,110 @@ void runRr(node* head)
 		}
 		time++;
 	}
+	printf("Finished at time %d\n\n",runFor);
 		
 	for(i=0;i<pCount;i++)
 	{
 		printf("%s wait %d turnaround %d\n",nameArr[i],waitArr[i],(finArr[i]-arrivalArr[i]));
 	}
-
 }
 
+void fcfs(node* head,process process_list[],int processCount,int runTime,int quantum){
+
+
+    int inputCount=5;
+    int count=0;
+
+
+    //checks if the information for each process is in. Eg.) process name, arrival time, burst times for each process, built in flags
+    if(processCount!=0){
+        while(count<processCount){
+            inputCount=inputCount+3;
+            strcpy(process_list[count].processName,stringList[inputCount]);
+
+            inputCount=inputCount+2;
+            process_list[count].arrivalTime=atoi(stringList[inputCount]);
+
+            inputCount=inputCount+2;
+            process_list[count].burstTime=atoi(stringList[inputCount]);
+
+            //for 1st check later
+            process_list[count].maxBurst=process_list[count].burstTime;
+
+            //checks if its the first time the process shows up
+            count++;
+        }
+    }
+
+    //sorts processes by arrival time in ascending order
+    count=0;
+    int i=0;
+    int j;
+    for(i=0;i<processCount;i++)
+    {
+      for(j=0;j<(processCount-i-1);j++)
+      {
+        if(process_list[j].arrivalTime>process_list[j+1].arrivalTime)
+        {
+           process temp=process_list[j];
+           process_list[j]=process_list[j+1];
+           process_list[j+1]=temp;
+        }
+      }
+    }
+
+    //ordered by arrival time in ascending order
+    int time=0;
+    int running=0;
+    count=0;
+
+    printf("%d processes\n",processCount);
+    printf("Using First Come First Serve\n\n");
+
+
+    while(time!=runTime)
+    {
+        //prints arrival statements
+        if(time==process_list[count].arrivalTime)
+        {
+            printf("Time %d: %s arrived\n", time, process_list[count].processName);
+
+            //if the first process then also immediately select it
+            if(count==0)
+            {
+                printf("Time %d: %s selected (burst %d)\n", time, process_list[count].processName,process_list[count].maxBurst);
+            }
+            count++;
+        }
+
+        //Decrements remaining burst time
+        process_list[running].burstTime--;
+        if(process_list[running].burstTime<=0)
+        {
+            //prints finish statement and selects the next process
+            if(running!=0)
+            {
+                printf("Time %d: %s selected (burst %d)\n", process_list[running-1].timeFinished, process_list[running].processName,process_list[running].maxBurst);
+            }
+            process_list[running].timeFinished=time+1;
+            printf("Time %d: %s finished\n", time+1, process_list[running].processName);
+            running++;
+        }
+        time++;
+    }
+
+    printf("Finished at time %d\n\n",time);
+
+    //calculates wait and turnaround time
+    count=0;
+    int wait, turnAround;
+    while(count<processCount){
+        wait=process_list[count].timeFinished-process_list[count].arrivalTime-process_list[count].maxBurst;
+        turnAround=process_list[count].timeFinished-process_list[count].arrivalTime;
+        printf("%s wait %d turnaround %d\n", process_list[count].processName,wait,turnAround);
+        count++;
+    }
+}
 
 node* startsWithLetter(FILE* input, char firstLetter, node** tail){
     int nextLetter,len=30;
@@ -443,8 +578,6 @@ node* startsWithLetter(FILE* input, char firstLetter, node** tail){
     if (nextLetter != EOF )
         fseek(input, -1, SEEK_CUR);
 
-    //used to print input without comments
-    //printf("%s ",word);
     (*tail)->word=word;
 
     return *tail;
